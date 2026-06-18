@@ -575,6 +575,171 @@ Route::post('/captcha/verify', function (\Illuminate\Http\Request $req) {
 });
 ```
 
+### Yii2
+
+新建控制器 `controllers/GoCaptchaController.php`（basic 模板命名空间 `app\controllers`，advanced 模板按 `frontend\controllers` / `backend\controllers` 调整）：
+
+```php
+<?php
+namespace app\controllers;
+
+use Phgors\GoCaptcha\Click\ClickBuilder;
+use Phgors\GoCaptcha\Click\ClickValidator;
+use Phgors\GoCaptcha\Slide\SlideBuilder;
+use Phgors\GoCaptcha\Slide\GraphImage;
+use Phgors\GoCaptcha\Slide\SlideValidator;
+use Phgors\GoCaptcha\Rotate\RotateBuilder;
+use Phgors\GoCaptcha\Rotate\RotateValidator;
+use Phgors\GoCaptcha\Assets\DefaultAssets;
+use Yii;
+use yii\filters\VerbFilter;
+use yii\web\Controller;
+use yii\web\Response;
+
+class GoCaptchaController extends Controller
+{
+    public function behaviors(): array
+    {
+        return [
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'verify-click'  => ['post'],
+                    'verify-slide'  => ['post'],
+                    'verify-rotate' => ['post'],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 若校验接口走 AJAX 且不携带 CSRF token，可对相关动作关闭 CSRF：
+     * public function beforeAction($action)
+     * {
+     *     if (in_array($action->id, ['verify-click','verify-slide','verify-rotate'])) {
+     *         $this->enableCsrfValidation = false;
+     *     }
+     *     return parent::beforeAction($action);
+     * }
+     */
+
+    private function json(array $data): Response
+    {
+        $resp = Yii::$app->response;
+        $resp->format = Response::FORMAT_JSON;
+        $resp->data = $data;
+        return $resp;
+    }
+
+    /* ---------------- 点选 ---------------- */
+    public function actionClick(): Response
+    {
+        $captcha = ClickBuilder::make()
+            ->setBackgrounds(DefaultAssets::backgrounds())
+            ->setFonts(DefaultAssets::fonts())
+            ->setChars(DefaultAssets::chineseChars())
+            ->build();
+        $data = $captcha->generate();
+
+        Yii::$app->session->set('gocaptcha_click', array_map(function ($d) {
+            return $d->toArray();
+        }, $data->getDots()));
+
+        return $this->json($data->toArray());
+    }
+
+    public function actionVerifyClick(): Response
+    {
+        $points = Yii::$app->request->post('points', []);
+        $dots   = Yii::$app->session->get('gocaptcha_click', []);
+        $ok = ClickValidator::validate($dots, $points, 10);
+        Yii::$app->session->remove('gocaptcha_click');
+        return $this->json(['ok' => $ok]);
+    }
+
+    /* ---------------- 滑动 ---------------- */
+    public function actionSlide(): Response
+    {
+        $graphs = array_map(function ($dir) {
+            return new GraphImage("$dir/overlay.png", "$dir/mask.png", "$dir/shadow.png");
+        }, DefaultAssets::tileSets());
+
+        $data = SlideBuilder::make()
+            ->setBackgrounds(DefaultAssets::backgrounds())
+            ->setGraphs($graphs)
+            ->build()               // 或 ->buildRegion() 拖拽模式
+            ->generate();
+
+        Yii::$app->session->set('gocaptcha_slide', $data->getBlock()->toArray());
+        return $this->json($data->toArray());
+    }
+
+    public function actionVerifySlide(): Response
+    {
+        $block = Yii::$app->session->get('gocaptcha_slide', []);
+        $userX = (int) Yii::$app->request->post('x', -999);
+        $userY = (int) Yii::$app->request->post('y', -999);
+        $ok = SlideValidator::validate($block, $userX, $userY, 5);
+        Yii::$app->session->remove('gocaptcha_slide');
+        return $this->json(['ok' => $ok]);
+    }
+
+    /* ---------------- 旋转 ---------------- */
+    public function actionRotate(): Response
+    {
+        $data = RotateBuilder::make()
+            ->setBackgrounds(DefaultAssets::backgrounds())
+            ->build()
+            ->generate();
+
+        Yii::$app->session->set('gocaptcha_rotate', $data->getBlock()->getAngle());
+        return $this->json($data->toArray());
+    }
+
+    public function actionVerifyRotate(): Response
+    {
+        $angle     = (int) Yii::$app->session->get('gocaptcha_rotate', -1);
+        $userAngle = (int) Yii::$app->request->post('angle', -1);
+        $ok = RotateValidator::validate($angle, $userAngle, 8);
+        Yii::$app->session->remove('gocaptcha_rotate');
+        return $this->json(['ok' => $ok]);
+    }
+}
+```
+
+URL 规则（`config/web.php` 的 `components.request.baseUrlConfig` 或 `urlManager.rules`）：
+
+```php
+'urlManager' => [
+    'enablePrettyUrl' => true,
+    'showScriptName' => false,
+    'rules' => [
+        'GET  captcha/click'           => 'go-captcha/click',
+        'GET  captcha/slide'           => 'go-captcha/slide',
+        'GET  captcha/rotate'          => 'go-captcha/rotate',
+        'POST captcha/verify-click'    => 'go-captcha/verify-click',
+        'POST captcha/verify-slide'    => 'go-captcha/verify-slide',
+        'POST captcha/verify-rotate'   => 'go-captcha/verify-rotate',
+    ],
+],
+```
+
+在表单或业务接口里调用校验：先 `verify-*` 拿到 `ok`，再决定是否放行业务。也可把校验封装成模型验证规则（inline validator）：
+
+```php
+// 在模型 rules() 里加自定义校验
+['captcha', 'validateCaptcha', 'skipOnEmpty' => false],
+
+public function validateCaptcha($attribute, $params)
+{
+    if (!ClickValidator::validate(Yii::$app->session->get('gocaptcha_click', []), (array)$this->$attribute, 10)) {
+        $this->addError($attribute, '请按提示正确点选字符。');
+    }
+}
+```
+
+> 提示：Yii2 默认对 POST 做 CSRF 校验。若前端 AJAX 没带 CSRF token，用上面注释的 `beforeAction` 关闭对应动作的 CSRF；更推荐的做法是前端在 AJAX 头里带上 `X-CSRF-Token`（取自 `yii.getCCsrfToken()` / meta 标签）并保持 CSRF 开启。
+
 ### ThinkPHP / 其他框架
 
 逻辑一致：在控制器里 `generate()` → 图像返前端、答案存会话 → 校验时取答案调 `Validator`。Builder 实例可缓存（持有不可变配置，可重复 `generate()`）。
@@ -647,7 +812,7 @@ SlideCaptcha::generate() → SlideCaptchaData
     ->getBlock():        Block
     ->toArray():         array  (masterImage, tileImage)
 
-SlideValidator::validate(Block $block, int $userX, int $userY, int $padding): bool
+SlideValidator::validate(Block|array $block, int $userX, int $userY, int $padding): bool
 ```
 
 ### 旋转（Rotate）
