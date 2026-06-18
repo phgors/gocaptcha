@@ -29,7 +29,7 @@ class RotateChallengeTest extends TestCase
         imagedestroy($im);
     }
 
-    public function test_thumb_keeps_vertical_edge_while_master_is_rotated(): void
+    public function test_master_keeps_vertical_edge_while_thumb_is_rotated(): void
     {
         $options = (new RotateOptions())
             ->withRangeAngle(new RangeVal(90, 90));
@@ -46,22 +46,24 @@ class RotateChallengeTest extends TestCase
         self::assertNotFalse($masterGd);
         self::assertNotFalse($thumbGd);
 
-        $thumbLeftAvg = $this->avgBrightness($thumbGd, 20, 65, 10, 20);
-        $thumbRightAvg = $this->avgBrightness($thumbGd, 120, 65, 10, 20);
-        self::assertLessThan(60, $thumbLeftAvg, '缩略图左侧应为暗（未旋转，保留垂直边缘）');
-        self::assertGreaterThan(195, $thumbRightAvg, '缩略图右侧应为亮（未旋转，保留垂直边缘）');
+        // master 正立（不旋转）：保留垂直边缘（左暗右亮）
+        $masterLeftAvg = $this->avgBrightness($masterGd, 20, 65, 10, 20);
+        $masterRightAvg = $this->avgBrightness($masterGd, 120, 65, 10, 20);
+        self::assertLessThan(60, $masterLeftAvg, '主图左侧应为暗（正立未旋转，保留垂直边缘）');
+        self::assertGreaterThan(195, $masterRightAvg, '主图右侧应为亮（正立未旋转，保留垂直边缘）');
 
-        $masterTopAvg = $this->avgBrightness($masterGd, 100, 27, 20, 20);
-        $masterBottomAvg = $this->avgBrightness($masterGd, 100, 173, 20, 20);
+        // thumb 旋转 90°：垂直边变水平边（上下区域差异显著）
+        $thumbTopAvg = $this->avgBrightness($thumbGd, 60, 20, 20, 10);
+        $thumbBottomAvg = $this->avgBrightness($thumbGd, 60, 120, 20, 10);
         self::assertGreaterThan(
             130,
-            abs($masterTopAvg - $masterBottomAvg),
-            '主图上下区域应差异显著（旋转 90° 后垂直边变水平边）'
+            abs($thumbTopAvg - $thumbBottomAvg),
+            '缩略图上下区域应差异显著（旋转 90° 后垂直边变水平边）'
         );
-        $vals = [$masterTopAvg, $masterBottomAvg];
+        $vals = [$thumbTopAvg, $thumbBottomAvg];
         sort($vals);
-        self::assertLessThan(60, $vals[0], '主图上下区域其一应为暗');
-        self::assertGreaterThan(195, $vals[1], '主图上下区域其一应为亮');
+        self::assertLessThan(60, $vals[0], '缩略图上下区域其一应为暗');
+        self::assertGreaterThan(195, $vals[1], '缩略图上下区域其一应为亮');
 
         imagedestroy($masterGd);
         imagedestroy($thumbGd);

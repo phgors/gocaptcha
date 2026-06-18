@@ -2,16 +2,15 @@
 // src/Rotate/RotateCaptchaData.php
 namespace Phgors\GoCaptcha\Rotate;
 
-use Phgors\GoCaptcha\ImageData\JpegImage;
 use Phgors\GoCaptcha\ImageData\PngImage;
 
 final class RotateCaptchaData
 {
     private RotateBlock $block;
-    private JpegImage $masterImage;
+    private PngImage $masterImage;
     private PngImage $thumbImage;
 
-    public function __construct(RotateBlock $block, JpegImage $masterImage, PngImage $thumbImage)
+    public function __construct(RotateBlock $block, PngImage $masterImage, PngImage $thumbImage)
     {
         $this->block = $block;
         $this->masterImage = $masterImage;
@@ -19,7 +18,7 @@ final class RotateCaptchaData
     }
 
     public function getBlock(): RotateBlock { return $this->block; }
-    public function getMasterImage(): JpegImage { return $this->masterImage; }
+    public function getMasterImage(): PngImage { return $this->masterImage; }
     public function getThumbImage(): PngImage { return $this->thumbImage; }
 
     public function toArray(): array

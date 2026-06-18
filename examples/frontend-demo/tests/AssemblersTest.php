@@ -74,8 +74,8 @@ final class AssemblersTest extends TestCase
     public function test_assemble_rotate_has_zero_angle_and_thumbSize(): void
     {
         $data = new RotateCaptchaData(
-            new RotateBlock(137),
-            $this->jpeg(),
+            new RotateBlock(137),                     // 答案角度
+            $this->png(),
             $this->png()
         );
         $out = assemble_rotate($data, 150);

@@ -5,7 +5,6 @@ namespace Phgors\GoCaptcha\Rotate;
 use Phgors\GoCaptcha\Base\Canvas;
 use Phgors\GoCaptcha\Base\Color;
 use Phgors\GoCaptcha\Base\Rng;
-use Phgors\GoCaptcha\ImageData\JpegImage;
 use Phgors\GoCaptcha\ImageData\PngImage;
 
 final class RotateGenerator
@@ -29,6 +28,7 @@ final class RotateGenerator
         $thumbSize = $this->options->getThumbSquareSize();
         $angle = $this->rng->range($this->options->getRangeAngle());
 
+        // 背景中心裁剪最大正方形
         $bgPath = $this->rng->pick($this->backgrounds);
         $bg = Canvas::fromPath($bgPath);
         $side = min($bg->getWidth(), $bg->getHeight());
@@ -38,41 +38,46 @@ final class RotateGenerator
         $square->copy($bg, 0, 0, $offsetX, $offsetY, $side, $side);
         $bg->destroy();
 
-        $resized = new Canvas($size, $size);
-        $resized->copyResampled($square, 0, 0, 0, 0, $size, $size, $side, $side);
+        // master：背景缩放 + 圆形遮罩（正立，不旋转）—— 对齐官方 go-captcha
+        $master = new Canvas($size, $size);
+        $master->copyResampled($square, 0, 0, 0, 0, $size, $size, $side, $side);
+        $this->applyCircleAlpha($master, 1.0);
+
+        // thumb：背景缩放 + 圆形遮罩 + 旋转 angle（用户旋转 thumb 对齐 master）
+        $thumbBase = new Canvas($thumbSize, $thumbSize);
+        $thumbBase->copyResampled($square, 0, 0, 0, 0, $thumbSize, $thumbSize, $side, $side);
+        $this->applyCircleAlpha($thumbBase, $this->options->getThumbAlpha());
+        $transparent = $thumbBase->allocateColor(new Color(0, 0, 0, 127));
+        $rotated = $thumbBase->rotate((float) $angle, $transparent);
+        $thumbBase->destroy();
+        // imagerotate 会放大画布以容纳旋转图，裁回 thumbSize 中心（圆形旋转后仍居中）
+        $rotW = $rotated->getWidth();
+        $rc = (int)(($rotW - $thumbSize) / 2);
+        $thumb = new Canvas($thumbSize, $thumbSize);
+        $thumb->copy($rotated, 0, 0, max(0, $rc), max(0, $rc), $thumbSize, $thumbSize);
+        $rotated->destroy();
+
         $square->destroy();
 
-        $bgColor = $resized->allocateColor(Color::fromHex('#000000'));
-        $rotated = $resized->rotate((float)$angle, $bgColor);
-        $master = new Canvas($size, $size);
-        $rx = (int)(($rotated->getWidth() - $size) / 2);
-        $ry = (int)(($rotated->getHeight() - $size) / 2);
-        $master->copy($rotated, 0, 0, max(0, $rx), max(0, $ry), $size, $size);
-
-        $thumb = $this->makeCircularThumb($resized, $thumbSize, $this->options->getThumbAlpha());
-
-        $rotated->destroy();
-        $resized->destroy();
-
-        $jpeg = new JpegImage($master->releaseResource());
-        $png = new PngImage($thumb->releaseResource());
+        $masterPng = new PngImage($master->releaseResource());
+        $thumbPng = new PngImage($thumb->releaseResource());
         $block = new RotateBlock($angle);
 
-        return new RotateCaptchaData($block, $jpeg, $png);
+        return new RotateCaptchaData($block, $masterPng, $thumbPng);
     }
 
-    private function makeCircularThumb(Canvas $source, int $thumbSize, float $thumbAlpha): Canvas
+    /**
+     * 圆形遮罩：圆内按 alphaRatio 保留不透明度，圆外及边缘 1.5px 抗锯齿过渡为透明。
+     */
+    private function applyCircleAlpha(Canvas $canvas, float $alphaRatio): void
     {
-        $srcSide = $source->getWidth();
-        $thumb = new Canvas($thumbSize, $thumbSize);
-        $thumb->copyResampled($source, 0, 0, 0, 0, $thumbSize, $thumbSize, $srcSide, $srcSide);
-
-        $center = $thumbSize / 2;
+        $side = $canvas->getWidth();
+        $center = $side / 2;
         $radius = $center;
-        $res = $thumb->getResource();
+        $res = $canvas->getResource();
         imagealphablending($res, false);
-        for ($y = 0; $y < $thumbSize; $y++) {
-            for ($x = 0; $x < $thumbSize; $x++) {
+        for ($y = 0; $y < $side; $y++) {
+            for ($x = 0; $x < $side; $x++) {
                 $dx = $x - $center;
                 $dy = $y - $center;
                 $dist = sqrt($dx * $dx + $dy * $dy);
@@ -86,7 +91,7 @@ final class RotateGenerator
                 } elseif ($dist > $radius - 1.5) {
                     $baseA = 127 - (int)((1 - ($radius - $dist) / 1.5) * 127);
                 }
-                $finalA = 127 - (int)((127 - $baseA) * $thumbAlpha);
+                $finalA = 127 - (int)((127 - $baseA) * $alphaRatio);
                 $finalA = max(0, min(127, $finalA));
                 $col = imagecolorallocatealpha($res, $r, $g, $b, $finalA);
                 if ($col !== false) {
@@ -94,6 +99,6 @@ final class RotateGenerator
                 }
             }
         }
-        return $thumb;
+        imagealphablending($res, true);
     }
 }
