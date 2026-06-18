@@ -45,4 +45,31 @@ class ClickGenerateTest extends TestCase
         $b = $build(999);
         self::assertSame($a->getDots()[0]->getX(), $b->getDots()[0]->getX());
     }
+
+    /**
+     * 字符以 dot 为视觉中心、半径 ~字符半尺寸 的区域须完整落在画布内。
+     * 回归：原实现把 imagettftext 基线坐标当作 Dot，导致字符边缘裁切、
+     * 且与用户点击的视觉中心系统性偏差（>padding）使校验恒失败。
+     */
+    public function test_dots_are_character_centers_within_canvas(): void
+    {
+        $captcha = ClickBuilder::make()
+            ->setBackgrounds(DefaultAssets::backgrounds())
+            ->setFonts(DefaultAssets::fonts())
+            ->setChars(DefaultAssets::chineseChars())
+            ->build();
+
+        $W = 300; $H = 220; // ClickOptions 默认 imageSize
+        for ($i = 0; $i < 100; $i++) {
+            $data = $captcha->generate();
+            self::assertNotEmpty($data->getDots());
+            foreach ($data->getDots() as $dot) {
+                $half = (int) ceil($dot->getSize() * 0.7);
+                self::assertGreaterThanOrEqual($half, $dot->getX(), "dot.x={$dot->getX()} 左侧可能裁切");
+                self::assertLessThanOrEqual($W - $half, $dot->getX(), "dot.x={$dot->getX()} 右侧可能裁切");
+                self::assertGreaterThanOrEqual($half, $dot->getY(), "dot.y={$dot->getY()} 顶部可能裁切");
+                self::assertLessThanOrEqual($H - $half, $dot->getY(), "dot.y={$dot->getY()} 底部可能裁切");
+            }
+        }
+    }
 }

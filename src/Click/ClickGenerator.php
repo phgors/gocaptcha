@@ -79,17 +79,44 @@ final class ClickGenerator
         $h = $imageSize->getHeight();
         $placed = [];
         $maxAttempts = 200;
+        $pad = 4;
+
         foreach ($chosen as $text) {
             $size = $this->rng->range($opts->getRangeSize());
             $angle = $this->rng->getInt(-30, 30);
             $colorHex = $this->rng->pick($opts->getRangeColors());
             $color = Color::fromHex($colorHex);
 
+            // 字符边界框（相对基线点 0,0），用于确定放置范围与视觉中心
+            $font = null;
+            if ($this->shapeMode) {
+                $half = $size / 2;
+                $minX = -$half; $maxX = $half; $minY = -$half; $maxY = $half;
+            } else {
+                $font = $this->rng->pick($this->resources->getFonts());
+                $box = imagettfbbox((float) $size, (float) $angle, $font->getPath(), (string) $text);
+                $xs = [$box[0], $box[2], $box[4], $box[6]];
+                $ys = [$box[1], $box[3], $box[5], $box[7]];
+                $minX = min($xs); $maxX = max($xs); $minY = min($ys); $maxY = max($ys);
+            }
+            $meanX = ($minX + $maxX) / 2;
+            $meanY = ($minY + $maxY) / 2;
+
+            // 基线点 (x,y) 范围：使字符框完整落在画布内 [pad, w-pad] x [pad, h-pad]
+            $xLo = (int) ceil($pad - $minX);
+            $xHi = (int) floor($w - $pad - $maxX);
+            $yLo = (int) ceil($pad - $minY);
+            $yHi = (int) floor($h - $pad - $maxY);
+            if ($xHi < $xLo) { $xHi = $xLo; }
+            if ($yHi < $yLo) { $yHi = $yLo; }
+
             $attempts = 0;
             do {
-                $x = $this->rng->getInt($size + 4, max($size + 5, $w - $size - 4));
-                $y = $this->rng->getInt($size + 4, max($size + 5, $h - 4));
-                $ok = $this->isPositionFree($x, $y, $size, $placed);
+                $x = $this->rng->getInt($xLo, $xHi);
+                $y = $this->rng->getInt($yLo, $yHi);
+                $cx = (int) round($x + $meanX);
+                $cy = (int) round($y + $meanY);
+                $ok = $this->isPositionFree($cx, $cy, $size, $placed);
                 $attempts++;
             } while (!$ok && $attempts < $maxAttempts);
 
@@ -99,10 +126,10 @@ final class ClickGenerator
 
             if ($opts->isDisplayShadow()) {
                 $shadow = Color::fromHex($opts->getShadowColor());
-                $this->renderItem($master, $text, $size, $angle, $x + $opts->getShadowOffsetX(), $y + $opts->getShadowOffsetY(), $shadow);
+                $this->renderItem($master, $text, $size, $angle, $x + $opts->getShadowOffsetX(), $y + $opts->getShadowOffsetY(), $shadow, $font);
             }
-            $this->renderItem($master, $text, $size, $angle, $x, $y, $color);
-            $placed[] = ['x' => $x, 'y' => $y, 'size' => $size, 'text' => $text];
+            $this->renderItem($master, $text, $size, $angle, $x, $y, $color, $font);
+            $placed[] = ['x' => $cx, 'y' => $cy, 'size' => $size, 'text' => $text];
         }
         return $placed;
     }
@@ -120,7 +147,7 @@ final class ClickGenerator
         return true;
     }
 
-    private function renderItem(Canvas $master, string $text, int $size, int $angle, int $x, int $y, Color $color): void
+    private function renderItem(Canvas $master, string $text, int $size, int $angle, int $x, int $y, Color $color, ?Font $font): void
     {
         if ($this->shapeMode) {
             $shapes = $this->resources->getShapes();
@@ -135,7 +162,6 @@ final class ClickGenerator
             $img->destroy();
             $dest->destroy();
         } else {
-            $font = $this->rng->pick($this->resources->getFonts());
             $colorIdx = $master->allocateColor($color);
             $master->ttfText((float)$size, (float)$angle, $x, $y, $colorIdx, $font->getPath(), $text);
         }
