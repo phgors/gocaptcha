@@ -13,8 +13,8 @@ final class ClickValidator
     }
 
     /**
-     * @param Dot[] $dots
-     * @param array<int, array{x:int,y:int}> $userPoints
+     * @param Dot[]|array[] $dots 答案（Dot 对象或含 x/y 键的数组）
+     * @param array<int, array{x:int,y:int}|array{int,int}> $userPoints 用户点击坐标
      */
     public static function validate(array $dots, array $userPoints, int $padding): bool
     {
@@ -23,12 +23,14 @@ final class ClickValidator
         }
         $matched = array_fill(0, count($dots), false);
         foreach ($userPoints as $pt) {
+            [$sx, $sy] = self::pointCoords($pt);
             $hit = false;
             foreach ($dots as $i => $dot) {
                 if ($matched[$i]) {
                     continue;
                 }
-                if (self::checkPoint((int)$pt['x'], (int)$pt['y'], $dot, $padding)) {
+                [$dx, $dy] = self::dotCoords($dot);
+                if (self::within($sx, $sy, $dx, $dy, $padding)) {
                     $matched[$i] = true;
                     $hit = true;
                     break;
@@ -39,5 +41,27 @@ final class ClickValidator
             }
         }
         return true;
+    }
+
+    private static function dotCoords($dot): array
+    {
+        if (is_array($dot)) {
+            return [(int)($dot['x'] ?? 0), (int)($dot['y'] ?? 0)];
+        }
+        return [$dot->getX(), $dot->getY()];
+    }
+
+    private static function pointCoords($pt): array
+    {
+        if (isset($pt['x'])) {
+            return [(int)$pt['x'], (int)($pt['y'] ?? 0)];
+        }
+        return [(int)($pt[0] ?? 0), (int)($pt[1] ?? 0)];
+    }
+
+    private static function within(int $sx, int $sy, int $dx, int $dy, int $padding): bool
+    {
+        return $sx >= $dx - $padding && $sx <= $dx + $padding
+            && $sy >= $dy - $padding && $sy <= $dy + $padding;
     }
 }

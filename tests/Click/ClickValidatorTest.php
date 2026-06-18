@@ -39,4 +39,18 @@ class ClickValidatorTest extends TestCase
         $dots = [new Dot(0, 50, 50, 30)];
         self::assertFalse(ClickValidator::validate($dots, [], 10));
     }
+
+    public function test_validate_accepts_array_dots(): void
+    {
+        $dots = [['index' => 0, 'x' => 50, 'y' => 50, 'size' => 30]];
+        $points = [['x' => 55, 'y' => 48]];
+        self::assertTrue(ClickValidator::validate($dots, $points, 10));
+    }
+
+    public function test_validate_accepts_numeric_indexed_points(): void
+    {
+        $dots = [new Dot(0, 100, 100, 30)];
+        $points = [[105, 98]]; // [x, y]
+        self::assertTrue(ClickValidator::validate($dots, $points, 10));
+    }
 }
