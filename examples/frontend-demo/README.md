@@ -1,6 +1,8 @@
 # phgors/gocaptcha 前端演示
 
-用 [go-captcha-jslib](https://www.npmjs.com/package/go-captcha-jslib)（CDN 引入，v1.0.9）对接本仓库 PHP 后端，演示 **点选 / 滑动 / 区域拖拽 / 旋转** 四种验证码的完整「生成 → 交互 → 校验」流程。
+用 [go-captcha-jslib](https://www.npmjs.com/package/go-captcha-jslib)（本地 vendor 引入，v1.0.9）对接本仓库 PHP 后端，演示 **点选 / 滑动 / 区域拖拽 / 旋转** 四种验证码的完整「生成 → 交互 → 校验」流程。
+
+> **前端参考**：[GoCaptcha 官网文档](http://gocaptcha.wencodes.com/docs/)
 
 ## 运行
 
