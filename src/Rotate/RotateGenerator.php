@@ -49,7 +49,7 @@ final class RotateGenerator
         $ry = (int)(($rotated->getHeight() - $size) / 2);
         $master->copy($rotated, 0, 0, max(0, $rx), max(0, $ry), $size, $size);
 
-        $thumb = $this->makeCircularThumb($resized, $thumbSize);
+        $thumb = $this->makeCircularThumb($resized, $thumbSize, $this->options->getThumbAlpha());
 
         $rotated->destroy();
         $resized->destroy();
@@ -61,35 +61,36 @@ final class RotateGenerator
         return new RotateCaptchaData($block, $jpeg, $png);
     }
 
-    private function makeCircularThumb(Canvas $master, int $thumbSize): Canvas
+    private function makeCircularThumb(Canvas $source, int $thumbSize, float $thumbAlpha): Canvas
     {
-        $w = $master->getWidth();
+        $srcSide = $source->getWidth();
         $thumb = new Canvas($thumbSize, $thumbSize);
-        $srcSide = $w;
-        $thumb->copyResampled($master, 0, 0, 0, 0, $thumbSize, $thumbSize, $srcSide, $srcSide);
+        $thumb->copyResampled($source, 0, 0, 0, 0, $thumbSize, $thumbSize, $srcSide, $srcSide);
 
         $center = $thumbSize / 2;
         $radius = $center;
+        $res = $thumb->getResource();
+        imagealphablending($res, false);
         for ($y = 0; $y < $thumbSize; $y++) {
             for ($x = 0; $x < $thumbSize; $x++) {
                 $dx = $x - $center;
                 $dy = $y - $center;
                 $dist = sqrt($dx * $dx + $dy * $dy);
+                $rgb = imagecolorat($res, $x, $y);
+                $r = (int)(($rgb >> 16) & 0xFF);
+                $g = (int)(($rgb >> 8) & 0xFF);
+                $b = (int)($rgb & 0xFF);
+                $baseA = (int)(($rgb >> 24) & 0x7F);
                 if ($dist > $radius) {
-                    $col = imagecolorallocatealpha($thumb->getResource(), 0, 0, 0, 127);
-                    if ($col !== false) {
-                        imagesetpixel($thumb->getResource(), $x, $y, $col);
-                    }
+                    $baseA = 127;
                 } elseif ($dist > $radius - 1.5) {
-                    $a = 127 - (int)((1 - ($radius - $dist) / 1.5) * 127);
-                    $rgb = imagecolorat($thumb->getResource(), $x, $y);
-                    $r = (int)(($rgb >> 16) & 0xFF);
-                    $g = (int)(($rgb >> 8) & 0xFF);
-                    $b = (int)($rgb & 0xFF);
-                    $col = imagecolorallocatealpha($thumb->getResource(), $r, $g, $b, max(0, min(127, $a)));
-                    if ($col !== false) {
-                        imagesetpixel($thumb->getResource(), $x, $y, $col);
-                    }
+                    $baseA = 127 - (int)((1 - ($radius - $dist) / 1.5) * 127);
+                }
+                $finalA = 127 - (int)((127 - $baseA) * $thumbAlpha);
+                $finalA = max(0, min(127, $finalA));
+                $col = imagecolorallocatealpha($res, $r, $g, $b, $finalA);
+                if ($col !== false) {
+                    imagesetpixel($res, $x, $y, $col);
                 }
             }
         }

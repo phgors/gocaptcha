@@ -67,6 +67,57 @@ class RotateChallengeTest extends TestCase
         imagedestroy($thumbGd);
     }
 
+    public function test_thumb_alpha_makes_thumb_more_transparent(): void
+    {
+        $build = function (float $thumbAlpha): string {
+            $options = (new RotateOptions())
+                ->withRangeAngle(new RangeVal(0, 0))
+                ->withThumbAlpha($thumbAlpha);
+            $captcha = RotateBuilder::make()
+                ->setOptions($options)
+                ->setBackgrounds([self::$fixturePath])
+                ->setRng(new Rng(1))
+                ->build();
+            return $captcha->generate()->getThumbImage()->toBytes();
+        };
+
+        $opaque = imagecreatefromstring($build(1.0));
+        $faint = imagecreatefromstring($build(0.3));
+        self::assertNotFalse($opaque);
+        self::assertNotFalse($faint);
+
+        $opaqueOpacity = $this->avgOpacity($opaque, 60, 60, 30, 30);
+        $faintOpacity = $this->avgOpacity($faint, 60, 60, 30, 30);
+
+        self::assertGreaterThan($faintOpacity + 20, $opaqueOpacity, 'thumbAlpha=1.0 应比 0.3 更不透明');
+        self::assertGreaterThan(110, $opaqueOpacity, 'thumbAlpha=1.0 圆内应近乎不透明');
+        self::assertLessThan(80, $faintOpacity, 'thumbAlpha=0.3 圆内应明显更透明');
+
+        imagedestroy($opaque);
+        imagedestroy($faint);
+    }
+
+    /**
+     * @param resource|\GdImage $im
+     */
+    private function avgOpacity($im, int $x0, int $y0, int $w, int $h): float
+    {
+        $sum = 0.0;
+        $count = 0;
+        for ($y = $y0; $y < $y0 + $h; $y++) {
+            for ($x = $x0; $x < $x0 + $w; $x++) {
+                $rgb = imagecolorat($im, $x, $y);
+                if ($rgb === false) {
+                    continue;
+                }
+                $a = ($rgb >> 24) & 0x7F;
+                $sum += (127 - $a);
+                $count++;
+            }
+        }
+        return $count > 0 ? $sum / $count : 0.0;
+    }
+
     /**
      * @param resource|\GdImage $im
      */
