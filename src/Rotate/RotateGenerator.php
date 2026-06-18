@@ -48,15 +48,15 @@ final class RotateGenerator
         $rx = (int)(($rotated->getWidth() - $size) / 2);
         $ry = (int)(($rotated->getHeight() - $size) / 2);
         $master->copy($rotated, 0, 0, max(0, $rx), max(0, $ry), $size, $size);
-        $rotated->destroy();
 
-        $thumb = $this->makeCircularThumb($master, $thumbSize);
+        $thumb = $this->makeCircularThumb($resized, $thumbSize);
+
+        $rotated->destroy();
+        $resized->destroy();
 
         $jpeg = new JpegImage($master->releaseResource());
         $png = new PngImage($thumb->releaseResource());
         $block = new RotateBlock($angle);
-
-        $resized->destroy();
 
         return new RotateCaptchaData($block, $jpeg, $png);
     }
