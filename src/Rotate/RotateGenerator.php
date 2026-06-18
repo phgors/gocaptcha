@@ -43,9 +43,10 @@ final class RotateGenerator
         $master->copyResampled($square, 0, 0, 0, 0, $size, $size, $side, $side);
         $this->applyCircleAlpha($master, 1.0);
 
-        // thumb：背景缩放 + 圆形遮罩 + 旋转 angle（用户旋转 thumb 对齐 master）
+        // thumb：从 master 中心 1:1 裁剪 thumbSize（与 master 同源同缩放，旋转对齐后可与 master 中心重叠拼接）+ 圆形遮罩 + 旋转
         $thumbBase = new Canvas($thumbSize, $thumbSize);
-        $thumbBase->copyResampled($square, 0, 0, 0, 0, $thumbSize, $thumbSize, $side, $side);
+        $off = (int)(($size - $thumbSize) / 2);
+        $thumbBase->copy($master, 0, 0, $off, $off, $thumbSize, $thumbSize);
         $this->applyCircleAlpha($thumbBase, $this->options->getThumbAlpha());
         $transparent = $thumbBase->allocateColor(new Color(0, 0, 0, 127));
         $rotated = $thumbBase->rotate((float) $angle, $transparent);
