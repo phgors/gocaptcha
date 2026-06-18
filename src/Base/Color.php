@@ -1,6 +1,8 @@
 <?php
 namespace Phgors\GoCaptcha\Base;
 
+use Phgors\GoCaptcha\Exception\ResourceException;
+
 final class Color
 {
     private int $r;
@@ -45,6 +47,10 @@ final class Color
 
     public function allocate($image): int
     {
-        return imagecolorallocatealpha($image, $this->r, $this->g, $this->b, $this->alpha);
+        $result = imagecolorallocatealpha($image, $this->r, $this->g, $this->b, $this->alpha);
+        if ($result === false) {
+            throw new ResourceException('颜色分配失败');
+        }
+        return $result;
     }
 }

@@ -76,4 +76,11 @@ class RngTest extends TestCase
         }
         self::assertSame($seqA, $seqB);
     }
+
+    public function test_get_int_throws_when_min_greater_than_max(): void
+    {
+        $rng = new Rng(1);
+        $this->expectException(\InvalidArgumentException::class);
+        $rng->getInt(10, 5);
+    }
 }

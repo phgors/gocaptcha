@@ -47,4 +47,25 @@ class ColorTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         new Color(300, 0, 0);
     }
+
+    public function test_allocate_returns_int(): void
+    {
+        $im = imagecreatetruecolor(10, 10);
+        self::assertIsInt(Color::fromHex('#ff8800')->allocate($im));
+        imagedestroy($im);
+    }
+
+    public function test_allocate_throws_when_color_table_full(): void
+    {
+        $im = imagecreate(10, 10);
+        for ($i = 0; $i < 256; $i++) {
+            imagecolorallocate($im, $i % 256, ($i * 2) % 256, ($i * 3) % 256);
+        }
+        $this->expectException(\Phgors\GoCaptcha\Exception\ResourceException::class);
+        try {
+            Color::fromHex('#ff8800')->allocate($im);
+        } finally {
+            imagedestroy($im);
+        }
+    }
 }

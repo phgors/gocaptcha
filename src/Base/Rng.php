@@ -29,6 +29,9 @@ final class Rng
 
     public function getInt(int $min, int $max): int
     {
+        if ($min > $max) {
+            throw new \InvalidArgumentException('min 不能大于 max');
+        }
         if ($this->seed === null) {
             return random_int($min, $max);
         }
