@@ -18,17 +18,20 @@ final class AssetLoader
     }
 
     /**
+     * @param string ...$extensions 可变数量扩展名，向后兼容单扩展名调用
      * @return string[]
      */
-    public function listFiles(string $subDir, string $extension): array
+    public function listFiles(string $subDir, string ...$extensions): array
     {
         $dir = $this->resourcesDir . '/' . trim($subDir, '/');
         if (!is_dir($dir)) {
             return [];
         }
         $result = [];
-        foreach (glob($dir . '/*.' . $extension) as $file) {
-            $result[] = $file;
+        foreach ($extensions as $extension) {
+            foreach ((glob($dir . '/*.' . $extension) ?: []) as $file) {
+                $result[] = $file;
+            }
         }
         return $result;
     }

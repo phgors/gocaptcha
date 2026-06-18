@@ -26,7 +26,7 @@ final class DefaultAssets
      */
     public static function fonts(): array
     {
-        $files = self::getLoader()->listFiles('fonts', 'ttf');
+        $files = self::getLoader()->listFiles('fonts', 'ttf', 'otf');
         $fonts = [];
         foreach ($files as $f) {
             $fonts[] = new Font($f);
@@ -62,7 +62,7 @@ final class DefaultAssets
             return [];
         }
         $sets = [];
-        foreach (glob($dir . '/*', GLOB_ONLYDIR) as $d) {
+        foreach ((glob($dir . '/*', GLOB_ONLYDIR) ?: []) as $d) {
             $sets[] = $d;
         }
         return $sets;
