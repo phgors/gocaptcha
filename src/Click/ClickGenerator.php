@@ -158,14 +158,34 @@ final class ClickGenerator
 
         $count = count($dots);
         $slotW = (int)($w / max(1, $count));
-        foreach ($dots as $i => $dot) {
-            $text = $chosen[$i];
-            $colorIdx = $canvas->allocateColor(Color::fromHex('#333333'));
-            $font = $this->rng->pick($this->resources->getFonts());
-            $size = (int)($h * 0.7);
-            $tx = (int)($slotW * $i + $slotW / 2);
-            $ty = (int)($h * 0.75);
-            $canvas->ttfText((float)$size, 0, $tx, $ty, $colorIdx, $font->getPath(), (string)$text);
+        if ($this->shapeMode) {
+            $shapes = $this->resources->getShapes();
+            foreach ($dots as $i => $dot) {
+                $key = $chosen[$i];
+                $path = $shapes[$key] ?? null;
+                if ($path === null) {
+                    throw new ResourceException('图形素材缺失：' . $key);
+                }
+                $img = Canvas::fromPath($path);
+                $drawSize = (int)($h * 0.8);
+                $scaled = new Canvas($drawSize, $drawSize);
+                $scaled->copyResampled($img, 0, 0, 0, 0, $drawSize, $drawSize, $img->getWidth(), $img->getHeight());
+                $dx = (int)($slotW * $i + ($slotW - $drawSize) / 2);
+                $dy = (int)(($h - $drawSize) / 2);
+                $canvas->mergeAlpha($scaled, $dx, $dy, $drawSize, $drawSize);
+                $img->destroy();
+                $scaled->destroy();
+            }
+        } else {
+            foreach ($dots as $i => $dot) {
+                $text = $chosen[$i];
+                $colorIdx = $canvas->allocateColor(Color::fromHex('#333333'));
+                $font = $this->rng->pick($this->resources->getFonts());
+                $size = (int)($h * 0.7);
+                $tx = (int)($slotW * $i + $slotW / 2);
+                $ty = (int)($h * 0.75);
+                $canvas->ttfText((float)$size, 0, $tx, $ty, $colorIdx, $font->getPath(), (string)$text);
+            }
         }
         return $canvas;
     }
