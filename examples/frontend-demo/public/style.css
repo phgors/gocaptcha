@@ -35,5 +35,5 @@ code { background: #eef; padding: 1px 5px; border-radius: 3px; }
 }
 .captcha-box {
   background: #fff; border: 1px solid #e3e5ea; border-radius: 8px;
-  padding: 12px; min-height: 240px; display: flex; justify-content: center;
+  padding: 12px; min-height: 240px;
 }
