@@ -1,0 +1,27 @@
+{
+    "name": "phgors/gocaptcha",
+    "description": "PHP 行为验证码库（点选/滑动/旋转），go-captcha 生态 PHP 后端实现",
+    "type": "library",
+    "license": "Apache-2.0",
+    "keywords": ["captcha", "go-captcha", "click", "slide", "rotate", "gd"],
+    "authors": [
+        {"name": "phgors"}
+    ],
+    "require": {
+        "php": ">=7.4",
+        "ext-gd": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Phgors\\GoCaptcha\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Phgors\\GoCaptcha\\Tests\\": "tests/"
+        }
+    }
+}
