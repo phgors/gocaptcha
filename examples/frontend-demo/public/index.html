@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>phgors/gocaptcha 前端演示 — go-captcha-jslib</title>
+  <link rel="stylesheet" href="https://unpkg.com/go-captcha-jslib@1.0.9/dist/gocaptcha.global.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>phgors/gocaptcha 前端演示</h1>
+    <p class="sub">用 <code>go-captcha-jslib</code> 对接 PHP 后端 · 点选 / 滑动 / 区域拖拽 / 旋转</p>
+
+    <nav class="tabs">
+      <button class="tab active" data-type="click">点选</button>
+      <button class="tab" data-type="slide">滑动</button>
+      <button class="tab" data-type="slide-region">区域拖拽</button>
+      <button class="tab" data-type="rotate">旋转</button>
+    </nav>
+
+    <section class="panel active" id="panel-click">
+      <div class="bar"><span class="status" data-status="idle">点击图中文字，完成后点确认</span><button class="refresh">刷新</button></div>
+      <div class="captcha-box" id="captcha-click"></div>
+    </section>
+
+    <section class="panel" id="panel-slide">
+      <div class="bar"><span class="status" data-status="idle">拖动滑块，把拼图移到缺口</span><button class="refresh">刷新</button></div>
+      <div class="captcha-box" id="captcha-slide"></div>
+    </section>
+
+    <section class="panel" id="panel-slide-region">
+      <div class="bar"><span class="status" data-status="idle">拖动拼图到缺口位置</span><button class="refresh">刷新</button></div>
+      <div class="captcha-box" id="captcha-slide-region"></div>
+    </section>
+
+    <section class="panel" id="panel-rotate">
+      <div class="bar"><span class="status" data-status="idle">旋转缩略图，使其与主图对齐</span><button class="refresh">刷新</button></div>
+      <div class="captcha-box" id="captcha-rotate"></div>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/go-captcha-jslib@1.0.9/dist/gocaptcha.global.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
