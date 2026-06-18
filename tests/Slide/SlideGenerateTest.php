@@ -35,4 +35,28 @@ class SlideGenerateTest extends TestCase
         self::assertStringStartsWith('data:image/png;base64,', $data->getTileImage()->toBase64());
         self::assertGreaterThan(0, $data->getBlock()->getX());
     }
+
+    public function test_base_mode_block_angle_is_zero(): void
+    {
+        $graphSets = DefaultAssets::tileSets();
+        if ($graphSets === []) {
+            self::markTestSkipped('未提供拼图素材，跳过');
+        }
+        $graphs = array_map(function ($dir) {
+            return new \Phgors\GoCaptcha\Slide\GraphImage(
+                $dir . '/overlay.png',
+                $dir . '/mask.png',
+                $dir . '/shadow.png'
+            );
+        }, $graphSets);
+
+        $captcha = SlideBuilder::make()
+            ->setBackgrounds(DefaultAssets::backgrounds())
+            ->setGraphs($graphs)
+            ->build();
+
+        $data = $captcha->generate();
+
+        self::assertSame(0, $data->getBlock()->getAngle());
+    }
 }

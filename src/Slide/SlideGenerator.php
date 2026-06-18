@@ -61,7 +61,7 @@ final class SlideGenerator
         } else {
             $ty = $imgSize->getHeight() - $targetSize - (int)($targetSize * 0.2);
         }
-        $angle = $this->rng->getInt(0, 360);
+        $angle = 0;
 
         (new MaskProcessor())->cutHole($master, $scaledMask, $scaledShadow, $tx, $ty);
 
