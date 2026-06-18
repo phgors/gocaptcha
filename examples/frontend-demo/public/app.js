@@ -56,6 +56,10 @@
   function load(type) {
     var mode = MODES[type];
     setStatus(type, "loading", "加载中…");
+    // 重置组件交互状态（清除已点击 dots / 滑块位置 / 旋转角度）
+    if (instances[type] && typeof instances[type].clear === "function") {
+      instances[type].clear();
+    }
     return fetch(mode.api)
       .then(function (r) {
         if (!r.ok) throw new Error("生成接口 HTTP " + r.status);
