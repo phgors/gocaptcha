@@ -38,12 +38,12 @@ final class MaskProcessor
     }
 
     /**
-     * 在主图 (x,y) 处挖缺口：shadow 半透明阴影 + overlay 按 mask alpha 混合（白处显示缺口像素）。
+     * 在主图 (x,y) 处挖缺口：按 mask 灰度阈值 + shadow 半透明阴影实现凹陷效果。
      */
-    public function cutHole(Canvas $master, Canvas $overlay, Canvas $mask, Canvas $shadow, int $x, int $y): void
+    public function cutHole(Canvas $master, Canvas $mask, Canvas $shadow, int $x, int $y): void
     {
-        $w = min($overlay->getWidth(), $mask->getWidth(), $shadow->getWidth());
-        $h = min($overlay->getHeight(), $mask->getHeight(), $shadow->getHeight());
+        $w = min($mask->getWidth(), $shadow->getWidth());
+        $h = min($mask->getHeight(), $shadow->getHeight());
         for ($j = 0; $j < $h; $j++) {
             for ($i = 0; $i < $w; $i++) {
                 $mx = $x + $i;
