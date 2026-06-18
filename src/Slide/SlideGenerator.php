@@ -63,10 +63,15 @@ final class SlideGenerator
         }
         $angle = 0;
 
+        // tile 背景：从 master（挖缺口前）裁剪拼图位置对应的背景图案
+        $bgCrop = new Canvas($targetSize, $targetSize);
+        $bgCrop->copy($master, 0, 0, $tx, $ty, $targetSize, $targetSize);
+
         (new MaskProcessor())->cutHole($master, $scaledMask, $scaledShadow, $tx, $ty);
 
         $tile = new Canvas($targetSize, $targetSize);
-        (new MaskProcessor())->applyAlpha($tile, $scaledOverlay, $scaledMask);
+        (new MaskProcessor())->applyAlpha($tile, $bgCrop, $scaledOverlay, $scaledMask);
+        $bgCrop->destroy();
 
         $scaledOverlay->destroy(); $scaledMask->destroy(); $scaledShadow->destroy();
 
