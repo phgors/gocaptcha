@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // examples/frontend-demo/tests/AssemblersTest.php
 use PHPUnit\Framework\TestCase;
 use Phgors\GoCaptcha\Click\ClickCaptchaData;
@@ -51,7 +52,9 @@ final class AssemblersTest extends TestCase
         $this->assertSame(150, $out['thumbY']);
         $this->assertSame(60, $out['thumbWidth']);
         $this->assertSame(60, $out['thumbHeight']);
-        $this->assertStringNotContainsString('200', $out['thumbX']);
+        $this->assertArrayNotHasKey('x', $out);
+        $this->assertArrayNotHasKey('y', $out);
+        $this->assertArrayNotHasKey('blockX', $out);
     }
 
     public function test_assemble_slide_region_uses_given_thumbX_and_thumbY(): void

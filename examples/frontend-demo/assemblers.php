@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // examples/frontend-demo/assemblers.php
 //
 // 把 phgors/gocaptcha 的 CaptchaData 组装成 go-captcha-jslib setData() 期望的字段。
