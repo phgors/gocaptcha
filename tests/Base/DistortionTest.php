@@ -24,6 +24,7 @@ class DistortionTest extends TestCase
         $c = new Canvas(150, 40);
         $d = new Distortion(new Rng(2));
         $d->drawSlimLines($c, 5, Color::fromHex('#999999'));
+        self::assertIsArray($c->getRgbAt(20, 20));
         $c->destroy();
     }
 
@@ -32,6 +33,7 @@ class DistortionTest extends TestCase
         $c = new Canvas(150, 40);
         $d = new Distortion(new Rng(3));
         $d->drawDots($c, 100, Color::fromHex('#666666'));
+        self::assertIsArray($c->getRgbAt(30, 30));
         $c->destroy();
     }
 }
