@@ -53,4 +53,27 @@ class RngTest extends TestCase
         sort($shuffled);
         self::assertSame(['a', 'b', 'c', 'd'], $shuffled);
     }
+
+    public function test_shuffle_is_deterministic_with_seed(): void
+    {
+        $items = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        $a = new Rng(42);
+        $b = new Rng(42);
+        self::assertSame($a->shuffle($items), $b->shuffle($items));
+    }
+
+    public function test_two_instances_independent(): void
+    {
+        $a = new Rng(42);
+        $b = new Rng(42);
+        $seqA = [];
+        for ($i = 0; $i < 5; $i++) {
+            $seqA[] = $a->getInt(0, 1000);
+        }
+        $seqB = [];
+        for ($i = 0; $i < 5; $i++) {
+            $seqB[] = $b->getInt(0, 1000);
+        }
+        self::assertSame($seqA, $seqB);
+    }
 }
