@@ -208,8 +208,16 @@ final class ClickGenerator
                 $colorIdx = $canvas->allocateColor(Color::fromHex('#333333'));
                 $font = $this->rng->pick($this->resources->getFonts());
                 $size = (int)($h * 0.7);
-                $tx = (int)($slotW * $i + $slotW / 2);
-                $ty = (int)($h * 0.75);
+                // 以字符视觉中心对齐 slot 中心，避免末字右溢出缩略图
+                $box = imagettfbbox((float)$size, 0, $font->getPath(), (string)$text);
+                $xs = [$box[0], $box[2], $box[4], $box[6]];
+                $ys = [$box[1], $box[3], $box[5], $box[7]];
+                $meanX = (min($xs) + max($xs)) / 2;
+                $meanY = (min($ys) + max($ys)) / 2;
+                $slotCx = (int)($slotW * $i + $slotW / 2);
+                $slotCy = (int)($h / 2);
+                $tx = (int) round($slotCx - $meanX);
+                $ty = (int) round($slotCy - $meanY);
                 $canvas->ttfText((float)$size, 0, $tx, $ty, $colorIdx, $font->getPath(), (string)$text);
             }
         }

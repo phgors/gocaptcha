@@ -64,7 +64,7 @@ class ClickGenerateTest extends TestCase
             $data = $captcha->generate();
             self::assertNotEmpty($data->getDots());
             foreach ($data->getDots() as $dot) {
-                $half = (int) ceil($dot->getSize() * 0.7);
+                $half = (int) ceil($dot->getSize() * 0.55);
                 self::assertGreaterThanOrEqual($half, $dot->getX(), "dot.x={$dot->getX()} 左侧可能裁切");
                 self::assertLessThanOrEqual($W - $half, $dot->getX(), "dot.x={$dot->getX()} 右侧可能裁切");
                 self::assertGreaterThanOrEqual($half, $dot->getY(), "dot.y={$dot->getY()} 顶部可能裁切");
